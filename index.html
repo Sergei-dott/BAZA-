@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Криптокликер</title>
+    <style>
+        :root {
+            --bg-dark: #1A1A1A;
+            --bg-panel: #262626;
+            --accent-orange: #FF6B00;
+            --accent-light: #FF8C42;
+            --text-light: #FFFFFF;
+            --text-gray: #CCCCCC;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .game-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .header img {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+        
+        .score {
+            color: var(--text-light);
+            font-size: 28px;
+            font-weight: 800;
+        }
+        
+        .circle {
+            position: relative;
+            margin-bottom: 30px;
+        }
+        
+        .circle img {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(255, 107, 0, 0.2);
+            transition: transform 0.3s ease;
+            --tiltX: 0deg;
+            --tiltY: 0deg;
+            transform: rotateX(var(--tiltX)) rotateY(var(--tiltY));
+        }
+        
+        .plus-one {
+            position: absolute;
+            font-size: 20px;
+            font-weight: 800;
+            background: linear-gradient(180deg, #e8c547 0%, #ef882b 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            pointer-events: none;
+            user-select: none;
+            animation: move-up 2s forwards;
+        }
+        
+        @keyframes move-up {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-50px); }
+        }
+        
+        .tabs-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--bg-panel);
+            border-top: 1px solid #444;
+            z-index: 100;
+        }
+        
+        .tabs-header {
+            display: flex;
+            border-bottom: 1px solid #444;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            background: transparent;
+            border: none;
+            color: var(--text-gray);
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: center;
+        }
+        
+        .tab-btn.active {
+            color: var(--accent-orange);
+            border-bottom: 2px solid var(--accent-orange);
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .profile-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-label {
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: var(--text-gray);
+        }
+        
+        .form-input {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background-color: #333;
+            color: white;
+            font-size: 16px;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-orange);
+        }
+        
+        .balance-info {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: rgba(255, 107, 0, 0.1);
+            border-radius: 8px;
+        }
+        
+        .balance-title {
+            font-size: 16px;
+            color: var(--text-gray);
+            margin-bottom: 5px;
+        }
+        
+        .balance-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-orange);
+        }
+        
+        .bonus-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .bonus-table th, .bonus-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+        }
+        
+        .bonus-table th {
+            color: var(--accent-orange);
+            font-weight: 500;
+        }
+        
+        @media (max-width: 350px) {
+            .circle img {
+                width: 180px;
+                height: 180px;
+            }
+            
+            .tab-btn {
+                padding: 12px;
+                font-size: 14px;
+            }
+            
+            .tab-content {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <img src="./assets/cooin.png" alt="coin">
+            <div class="score" id="score">0</div>
+        </div>
+        
+        <div class="circle">
+            <img id="circle" src="./assets/CryptoE.png" alt="Криптокошелек">
+        </div>
+    </div>
+    
+    <!-- Нижние вкладки -->
+    <div class="tabs-container">
+        <div class="tabs-header">
+            <button class="tab-btn active" data-tab="wallet">Кошелек</button>
+            <button class="tab-btn" data-tab="profile">Профиль</button>
+        </div>
+        
+        <div id="walletTab" class="tab-content active">
+            <div class="wallet-status">
+                <p id="walletStatusText">Кошелек не подключен</p>
+                <p id="walletAddress" class="hidden"></p>
+            </div>
+            
+            <button id="connectWalletBtn" class="wallet-btn connect-btn">Подключить автоматически</button>
+            <button id="disconnectWalletBtn" class="wallet-btn disconnect-btn hidden">Отключить</button>
+            
+            <div style="margin-top: 20px;">
+                <input type="text" id="manualWalletInput" class="form-input" placeholder="Введите 0x адрес">
+                <button id="pasteAddressBtn" class="wallet-btn manual-connect-btn" style="margin-top: 10px;">Вставить адрес</button>
+                <button id="saveManualWalletBtn" class="wallet-btn connect-btn" style="margin-top: 10px;">Сохранить кошелек</button>
+            </div>
+        </div>
+        
+        <div id="profileTab" class="tab-content">
+            <form class="profile-form">
+                <div class="form-group">
+                    <label class="form-label">Имя</label>
+                    <input type="text" id="firstName" class="form-input" placeholder="Введите ваше имя">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Фамилия</label>
+                    <input type="text" id="lastName" class="form-input" placeholder="Введите вашу фамилию">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Отчество</label>
+                    <input type="text" id="middleName" class="form-input" placeholder="Введите ваше отчество">
+                </div>
+                
+                <button type="button" id="saveProfileBtn" class="wallet-btn connect-btn">Сохранить профиль</button>
+            </form>
+            
+            <div class="balance-info">
+                <div class="balance-title">Ваш баланс</div>
+                <div class="balance-value" id="totalBalance">0 монет</div>
+            </div>
+            
+            <table class="bonus-table">
+                <thead>
+                    <tr>
+                        <th>Количество монет</th>
+                        <th>Бонус к аттестату</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>100 000+</td>
+                        <td>0.3 балла</td>
+                    </tr>
+                    <tr>
+                        <td>50 000 - 100 000</td>
+                        <td>0.2 балла</td>
+                    </tr>
+                    <tr>
+                        <td>30 000 - 50 000</td>
+                        <td>0.1 балл</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Элементы игры
+            const $circle = document.querySelector('#circle');
+            const $score = document.querySelector('#score');
+            const $totalBalance = document.querySelector('#totalBalance');
+            
+            // Элементы профиля
+            const $firstName = document.querySelector('#firstName');
+            const $lastName = document.querySelector('#lastName');
+            const $middleName = document.querySelector('#middleName');
+            const $saveProfileBtn = document.querySelector('#saveProfileBtn');
+            
+            // Элементы кошелька
+            const $connectWalletBtn = document.querySelector('#connectWalletBtn');
+            const $disconnectWalletBtn = document.querySelector('#disconnectWalletBtn');
+            const $walletStatusText = document.querySelector('#walletStatusText');
+            const $walletAddress = document.querySelector('#walletAddress');
+            const $manualWalletInput = document.querySelector('#manualWalletInput');
+            const $pasteAddressBtn = document.querySelector('#pasteAddressBtn');
+            const $saveManualWalletBtn = document.querySelector('#saveManualWalletBtn');
+            
+            // Элементы вкладок
+            const $tabButtons = document.querySelectorAll('.tab-btn');
+            const $tabContents = document.querySelectorAll('.tab-content');
+            
+            // Инициализация игры
+            function initGame() {
+                setScore(getScore());
+                updateTotalBalance();
+                loadProfile();
+            }
+            
+            // Функции игры
+            function setScore(score) {
+                localStorage.setItem('score', score);
+                $score.textContent = score;
+                updateTotalBalance();
+            }
+            
+            function getScore() {
+                return Number(localStorage.getItem('score')) || 0;
+            }
+            
+            function updateTotalBalance() {
+                const total = getTotalCoins();
+                $totalBalance.textContent = `${total} монет`;
+            }
+            
+            function getTotalCoins() {
+                return Number(localStorage.getItem('totalCoins')) || getScore();
+            }
+            
+            function addOne() {
+                const newScore = getScore() + 1;
+                setScore(newScore);
+                
+                // Обновляем общее количество монет
+                const totalCoins = getTotalCoins() + 1;
+                localStorage.setItem('totalCoins', totalCoins);
+                updateTotalBalance();
+            }
+            
+            // Обработчик клика по кругу
+            $circle.addEventListener('click', (event) => {
+                const rect = $circle.getBoundingClientRect();
+                const offsetX = event.clientX - rect.left - rect.width / 2;
+                const offsetY = event.clientY - rect.top - rect.height / 2;
+                const DEG = 40;
+                
+                const tiltX = (offsetY / rect.height) * DEG;
+                const tiltY = (offsetX / rect.width) * -DEG;
+                
+                $circle.style.setProperty('--tiltX', `${tiltX}deg`);
+                $circle.style.setProperty('--tiltY', `${tiltY}deg`);
+                
+                setTimeout(() => {
+                    $circle.style.setProperty('--tiltX', `0deg`);
+                    $circle.style.setProperty('--tiltY', `0deg`);
+                }, 300);
+                
+                const plusOne = document.createElement('div');
+                plusOne.classList.add('plus-one');
+                plusOne.textContent = '+1';
+                plusOne.style.left = `${event.clientX - rect.left}px`;
+                plusOne.style.top = `${event.clientY - rect.top}px`;
+                
+                $circle.parentElement.appendChild(plusOne);
+                
+                addOne();
+                
+                setTimeout(() => {
+                    plusOne.remove();
+                }, 2000);
+            });
+            
+            // Функции профиля
+            function loadProfile() {
+                const profile = JSON.parse(localStorage.getItem('profile')) || {};
+                $firstName.value = profile.firstName || '';
+                $lastName.value = profile.lastName || '';
+                $middleName.value = profile.middleName || '';
+            }
+            
+            function saveProfile() {
+                const profile = {
+                    firstName: $firstName.value.trim(),
+                    lastName: $lastName.value.trim(),
+                    middleName: $middleName.value.trim()
+                };
+                localStorage.setItem('profile', JSON.stringify(profile));
+                alert('Профиль сохранен!');
+            }
+            
+            $saveProfileBtn.addEventListener('click', saveProfile);
+            
+            // Функции кошелька
+            function connectWallet() {
+                if (window.ethereum) {
+                    $connectWalletBtn.textContent = 'Подключение...';
+                    window.ethereum.request({ method: 'eth_requestAccounts' })
+                        .then(accounts => {
+                            const walletData = {
+                                address: accounts[0],
+                                connectedAt: new Date().toISOString()
+                            };
+                            localStorage.setItem('wallet', JSON.stringify(walletData));
+                            updateWalletUI(walletData);
+                            $walletStatusText.textContent = 'Успешное подключение!';
+                        })
+                        .catch(error => {
+                            console.error('Ошибка подключения:', error);
+                            $walletStatusText.textContent = 'Подключение отменено';
+                        })
+                        .finally(() => {
+                            $connectWalletBtn.textContent = 'Подключить автоматически';
+                        });
+                } else {
+                    $walletStatusText.textContent = 'Установите MetaMask или другой кошелек';
+                }
+            }
+            
+            function disconnectWallet() {
+                localStorage.removeItem('wallet');
+                resetWalletUI();
+                $walletStatusText.textContent = 'Кошелек отключен';
+            }
+            
+            function updateWalletUI(walletData) {
+                const shortAddress = `${walletData.address.substring(0, 6)}...${walletData.address.substring(walletData.address.length - 4)}`;
+                $walletAddress.textContent = shortAddress;
+                $walletAddress.classList.remove('hidden');
+                $connectWalletBtn.classList.add('hidden');
+                $disconnectWalletBtn.classList.remove('hidden');
+            }
+            
+            function resetWalletUI() {
+                $walletAddress.textContent = '';
+                $walletAddress.classList.add('hidden');
+                $connectWalletBtn.classList.remove('hidden');
+                $disconnectWalletBtn.classList.add('hidden');
+            }
+            
+            function checkSavedWallet() {
+                const savedWallet = localStorage.getItem('wallet');
+                if (savedWallet) {
+                    updateWalletUI(JSON.parse(savedWallet));
+                }
+            }
+            
+            $connectWalletBtn.addEventListener('click', connectWallet);
+            $disconnectWalletBtn.addEventListener('click', disconnectWallet);
+            
+            // Ручное сохранение кошелька
+            $saveManualWalletBtn.addEventListener('click', function() {
+                const address = $manualWalletInput.value.trim();
+                if (!address) {
+                    alert('Введите адрес кошелька!');
+                    return;
+                }
+                
+                if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+                    alert('Неверный формат адреса!');
+                    return;
+                }
+                
+                const walletData = {
+                    address: address,
+                    connectedAt: new Date().toISOString(),
+                    type: 'manual'
+                };
+                
+                localStorage.setItem('wallet', JSON.stringify(walletData));
+                updateWalletUI(walletData);
+                $manualWalletInput.value = '';
+                $walletStatusText.textContent = 'Кошелек сохранен!';
+            });
+            
+            // Вставка адреса из буфера
+            $pasteAddressBtn.addEventListener('click', async function() {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    $manualWalletInput.value = text;
+                } catch (err) {
+                    alert('Не удалось вставить адрес. Разрешите доступ к буферу обмена.');
+                }
+            });
+            
+            // Переключение вкладок
+            $tabButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    $tabButtons.forEach(b => b.classList.remove('active'));
+                    $tabContents.forEach(c => c.classList.remove('active'));
+                    
+                    this.classList.add('active');
+                    document.getElementById(`${tabId}Tab`).classList.add('active');
+                });
+            });
+            
+            // Инициализация
+            initGame();
+            checkSavedWallet();
+            
+            // Отслеживание изменений аккаунта
+            if (window.ethereum) {
+                window.ethereum.on('accountsChanged', (accounts) => {
+                    if (accounts.length === 0) {
+                        disconnectWallet();
+                    } else {
+                        const walletData = {
+                            address: accounts[0],
+                            connectedAt: new Date().toISOString()
+                        };
+                        localStorage.setItem('wallet', JSON.stringify(walletData));
+                        updateWalletUI(walletData);
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
